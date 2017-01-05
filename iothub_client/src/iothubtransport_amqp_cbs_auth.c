@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "iothubtransport_amqp_cbs_auth.h"
-#include <stdlib.h>
+#include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/agenttime.h" 
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/sastoken.h"
+//#include <stdlib.h>
 
 #define RESULT_OK                                 0
 #define INDEFINITE_TIME                           ((time_t)(-1))
@@ -523,7 +524,7 @@ AUTHENTICATION_HANDLE authentication_create(const AUTHENTICATION_CONFIG* config)
 		LogError("authentication_create failed (either config->device_sas_token or config->device_primary_key must be provided; config->device_secondary_key is optional)");
 	}
 	// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_003: [If device keys and SAS token are both provided, authentication_create() shall fail and return NULL.]
-	else if (config->device_sas_token != NULL && (config->device_primary_key == NULL || config->device_secondary_key == NULL))
+	else if (config->device_sas_token != NULL && (config->device_primary_key != NULL || config->device_secondary_key != NULL))
 	{
 		result = NULL;
 		LogError("authentication_create failed (both config->device_sas_token and device device keys were provided; must provide only one)");
@@ -549,7 +550,7 @@ AUTHENTICATION_HANDLE authentication_create(const AUTHENTICATION_CONFIG* config)
 		{
 			// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_007: [If malloc() fails, authentication_create() shall fail and return NULL.]
 			result = NULL;
-			LogError("authentication_create failed (config->on_state_changed_callback is NULL)");
+			LogError("authentication_create failed (malloc failed)");
 		}
 		else
 		{
@@ -575,24 +576,26 @@ AUTHENTICATION_HANDLE authentication_create(const AUTHENTICATION_CONFIG* config)
 			{
 				// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_013: [If STRING_construct() fails to copy `config->device_primary_key`, authentication_create() shall fail and return NULL]
 				result = NULL;
-				LogError("authentication_create failed (config->device_id could not be copied; STRING_construct failed)");
+				LogError("authentication_create failed (config->device_primary_key could not be copied; STRING_construct failed)");
 			}
 			// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_014: [If provided, authentication_create() shall save a copy of `config->device_secondary_key` into `instance->device_secondary_key`]
 			else if (config->device_secondary_key != NULL && (instance->device_secondary_key = STRING_construct(config->device_secondary_key)) == NULL)
 			{
 				// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_015: [If STRING_construct() fails to copy `config->device_secondary_key`, authentication_create() shall fail and return NULL]
 				result = NULL;
-				LogError("authentication_create failed (config->device_id could not be copied; STRING_construct failed)");
+				LogError("authentication_create failed (config->device_secondary_key could not be copied; STRING_construct failed)");
 			}
 			// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_016: [If provided, authentication_create() shall save a copy of `config->iothub_host_fqdn` into `instance->iothub_host_fqdn`]
 			else if ((instance->iothub_host_fqdn = STRING_construct(config->iothub_host_fqdn)) == NULL)
 			{
 				// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_017: [If STRING_clone() fails to copy `config->iothub_host_fqdn`, authentication_create() shall fail and return NULL]
 				result = NULL;
-				LogError("authentication_create failed (config->device_id could not be copied; STRING_construct failed)");
+				LogError("authentication_create failed (config->iothub_host_fqdn could not be copied; STRING_construct failed)");
 			}
 			else
 			{
+				instance->state = AUTHENTICATION_STATE_CLOSED;
+
 				// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_018: [authentication_create() shall save `config->on_state_changed_callback` and `config->on_state_changed_callback_context` into `instance->on_state_changed_callback` and `instance->on_state_changed_callback_context`.]
 				instance->on_state_changed_callback = config->on_state_changed_callback;
 				instance->on_state_changed_callback_context = config->on_state_changed_callback_context;
@@ -611,12 +614,12 @@ AUTHENTICATION_HANDLE authentication_create(const AUTHENTICATION_CONFIG* config)
 				// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_024: [If no failure occurs, authentication_create() shall return a reference to the AUTHENTICATION_INSTANCE handle]
 				result = (AUTHENTICATION_HANDLE)instance;
 			}
-		}
 
-		// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_020: [If any failure occurs, authentication_create() shall free any memory it allocated previously]
-		if (result == NULL)
-		{
-			authentication_destroy((AUTHENTICATION_HANDLE)instance);
+			// Codes_SRS_IOTHUBTRANSPORT_AMQP_AUTH_09_020: [If any failure occurs, authentication_create() shall free any memory it allocated previously]
+			if (result == NULL)
+			{
+				authentication_destroy((AUTHENTICATION_HANDLE)instance);
+			}
 		}
 	}
 	
