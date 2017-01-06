@@ -10,3 +10,6 @@
 [submodule "umqtt"]
 	path = umqtt
 	url = https://github.com/lirenhe/azure-umqtt-c
+[submodule "uamqp"]
+	path = uamqp
+	url = https://github.com/lirenhe/azure-uamqp-c
