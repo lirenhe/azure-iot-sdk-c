@@ -1,7 +1,3 @@
-[submodule "azure-umqtt-c"]
-	path = umqtt
-	url = https://github.com/lirenhe/azure-umqtt-c.git
-	branch = develop
 [submodule "c-utility"]
 	path = c-utility
 	url = https://github.com/lirenhe/azure-c-shared-utility
