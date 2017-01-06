@@ -12,3 +12,6 @@
 [submodule "iothub_service_client/parson"]
 	path = iothub_service_client/parson
 	url = https://github.com/lirenhe/parson
+[submodule "c-utility"]
+	path = c-utility
+	url = https://github.com/lirenhe/azure-c-shared-utility
